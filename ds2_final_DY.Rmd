@@ -1,0 +1,115 @@
+---
+title: "ds2_final"
+author: "Maisie Sun"
+date: "2023-04-29"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(caret) 
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(patchwork)
+library(olsrr)
+library(splines)
+library(pdp)
+library(mgcv)
+library(earth)
+library(ggcorrplot)
+library(glmnet)
+library(corrplot)
+library(ggpubr)
+library(glmnet)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+# Merge data
+```{r data_merging}
+data_2101 <- 
+  read_csv("./data/2101_data.csv") %>%
+  janitor::clean_names() %>%
+  na.omit()
+
+data_6360 <-
+  read_csv("./data/6360_data.csv") %>%
+  janitor::clean_names() %>%
+  na.omit()
+
+data <- rbind(data_2101, data_6360) %>%
+  unique() %>%
+  mutate(gender = as.factor(gender),
+         smoking = as.factor(smoking),
+         race = as.factor(race),
+         hypertension = as.factor(hypertension),
+         diabetes = as.factor(diabetes),
+         vaccine = as.factor(vaccine),
+         severity = as.factor(severity),
+         study = as.factor(study))
+```
+
+# Create binary outcome
+```{r}
+data <-
+  data %>%
+  mutate(
+    recovery_time_binary = case_when(recovery_time > 30 ~ "long",
+                                     TRUE ~ "short")) %>%
+  mutate(
+    recovery_time_binary = as.factor(recovery_time_binary))
+```
+
+# Data partition: training and testing datasets
+```{r data, warning=FALSE}
+set.seed(6360) 
+trRows <- createDataPartition(data$recovery_time_binary,
+                              p = .80,
+                              list = F)
+
+# training data
+trainData <- data[trRows, ]
+trainData_matrix <- model.matrix(recovery_time_binary~.,data)[trRows, ]
+train_x <- model.matrix(recovery_time_binary~.,data)[trRows,-1]
+train_y <- data$recovery_time_binary[trRows]
+
+# test data
+testData <- data[-trRows, ]
+testData_matrix <- model.matrix(recovery_time_binary~.,data)[-trRows,]
+test_x <- model.matrix(recovery_time_binary~.,data)[-trRows,-1]
+test_y <- data$recovery_time_binary[-trRows]
+
+ctrl <- trainControl(method = "repeatedcv",
+                     summaryFunction = twoClassSummary,
+                     classProbs = TRUE)
+
+# str(data)
+```
+
+# Logistic Regression
+```{r}
+set.seed(6360) 
+
+# contrasts(data$recovery_time_binary)
+
+model.glm <- train(train_x, 
+                   train_y,
+                   method = "glm",
+                   metric = "ROC",
+                   trControl = ctrl)
+
+pred <- predict(model.glm, newdata = test_x, type = "prob")[,1]
+pred2 <- rep("short", length(test.pred))
+test.pred2[test.pred>0.5] = "long"
+
+mean(test.pred2 != test$Purchase)
+
+```
+
