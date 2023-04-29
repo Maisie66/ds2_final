@@ -18,10 +18,12 @@ library(pdp)
 library(mgcv)
 library(earth)
 library(ggcorrplot)
-library(glmnet)
 library(corrplot)
 library(ggpubr)
-library(glmnet)
+library(MASS)
+library(mlbench)
+library(pROC)
+library(klaR)
 
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
 options(
@@ -58,35 +60,37 @@ data <- rbind(data_2101, data_6360) %>%
 
 # Create binary outcome
 ```{r}
-data <-
+data_binary <-
   data %>%
   mutate(
-    recovery_time_binary = case_when(recovery_time > 30 ~ "long",
+    recovery_time = case_when(recovery_time > 30 ~ "long",
                                      TRUE ~ "short")) %>%
   mutate(
-    recovery_time_binary = as.factor(recovery_time_binary))
+    recovery_time = as.factor(recovery_time))
 ```
 
 # Data partition: training and testing datasets
 ```{r data, warning=FALSE}
 set.seed(6360) 
-trRows <- createDataPartition(data$recovery_time_binary,
+trRows_binary <- createDataPartition(data_binary$recovery_time,
                               p = .80,
                               list = F)
 
 # training data
-trainData <- data[trRows, ]
-trainData_matrix <- model.matrix(recovery_time_binary~.,data)[trRows, ]
-train_x <- model.matrix(recovery_time_binary~.,data)[trRows,-1]
-train_y <- data$recovery_time_binary[trRows]
+trainData_binary <- data_binary[trRows_binary, ]
+trainData_matrix_binary <-
+  model.matrix(recovery_time~.,data_binary)[trRows_binary, ]
+train_x_binary <- model.matrix(recovery_time~.,data_binary)[trRows_binary,-1]
+train_y_binary <- data_binary$recovery_time[trRows_binary]
 
 # test data
-testData <- data[-trRows, ]
-testData_matrix <- model.matrix(recovery_time_binary~.,data)[-trRows,]
-test_x <- model.matrix(recovery_time_binary~.,data)[-trRows,-1]
-test_y <- data$recovery_time_binary[-trRows]
+testData_binary <- data_binary[-trRows_binary, ]
+testData_matrix_binary <-
+  model.matrix(recovery_time~.,data_binary)[-trRows_binary,]
+test_x_binary <- model.matrix(recovery_time~.,data_binary)[-trRows_binary,-1]
+test_y_binary <- data_binary$recovery_time[-trRows_binary]
 
-ctrl <- trainControl(method = "repeatedcv",
+ctrl_binary <- trainControl(method = "repeatedcv",
                      summaryFunction = twoClassSummary,
                      classProbs = TRUE)
 
@@ -97,19 +101,90 @@ ctrl <- trainControl(method = "repeatedcv",
 ```{r}
 set.seed(6360) 
 
-# contrasts(data$recovery_time_binary)
+# contrasts(data$recovery_time)
 
-model.glm <- train(train_x, 
-                   train_y,
-                   method = "glm",
+model.glm.binary <- train(train_x_binary, 
+                          train_y_binary,
+                          method = "glm",
+                          metric = "ROC",
+                          trControl = ctrl_binary)
+
+pred_binary <- predict(model.glm.binary, newdata = test_x_binary, 
+                       type = "prob")[,1]
+pred2_binary <- rep("short", length(pred_binary))
+pred2_binary[pred_binary>0.5] = "long"
+
+mean(pred2_binary != testData_binary$recovery_time)
+```
+
+# GAM
+```{r}
+set.seed(6360) 
+
+model.gam.binary <- train(train_x_binary,
+                   train_y_binary,
+                   method = "gam",
                    metric = "ROC",
-                   trControl = ctrl)
+                   trControl = ctrl_binary)
+```
 
-pred <- predict(model.glm, newdata = test_x, type = "prob")[,1]
-pred2 <- rep("short", length(test.pred))
-test.pred2[test.pred>0.5] = "long"
+# MARS
+```{r}
+set.seed(6360) 
 
-mean(test.pred2 != test$Purchase)
+model.mars.binary <- train(train_x_binary,
+                           train_y_binary,
+                           method = "earth",
+                           tuneGrid = expand.grid(degree = 1:4,
+                                                  nprune = 2:20),
+                           metric = "ROC",
+                           trControl = ctrl_binary)
+
+plot(model.mars.binary)
+```
+
+# LDA
+```{r}
+set.seed(6360) 
+
+model.lda.binary <- train(train_x_binary,
+                          train_y_binary,
+                          method = "lda",
+                          metric = "ROC",
+                          trControl = ctrl_binary)
+```
+
+# QDA
+```{r}
+set.seed(6360) 
+
+model.qda.binary <- train(train_x_binary,
+                          train_y_binary,
+                          method = "qda",
+                          metric = "ROC",
+                          trControl = ctrl_binary)
+```
+
+# Naive Bayes
+```{r}
+nbGrid <- expand.grid(usekernel = c(FALSE,TRUE),
+                      fL = 1,
+                      adjust = seq(.2, 3, by = .2))
+
+set.seed(6360)
+
+model.nb.binary <- train(train_x_binary,
+                         train_y_binary,
+                         method = "nb",
+                         tuneGrid = nbGrid,
+                         metric = "ROC",
+                         trControl = ctrl_binary)
+
+plot(model.nb.binary)
+```
+
+# Classification Tree
+```{r}
 
 ```
 
