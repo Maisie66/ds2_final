@@ -35,7 +35,8 @@ data_6360 <-
   janitor::clean_names() %>%
   na.omit()
 
-data <- rbind(data_2101, data_6360)
+data <- rbind(data_2101, data_6360) %>%
+  unique()
 ```
 
 
