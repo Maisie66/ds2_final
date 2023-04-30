@@ -383,29 +383,28 @@ bwplot(resample, metric = "RMSE")
 
 # Regression tree
 
-```{r rpart}
+## Using rpart
+```{r rt_rpart}
 set.seed(6360)
-
 rpart.fit <- train(recovery_time ~ . , 
                    trainData, 
                    method = "rpart",
-                   tuneGrid = data.frame(cp = exp(seq(-12,-4, length = 100))),
+                   tuneGrid = data.frame(cp = exp(seq(-12,-2.5, length = 100))),
                    trControl = ctrl)
 
 ggplot(rpart.fit, highlight = TRUE)
 
+```
+
+## Using ctree
+```{r rt_ctree}
 set.seed(6360)
 ctree.fit <- train(recovery_time ~ . , 
                    trainData, 
                    method = "ctree",
-                   tuneGrid = data.frame(mincriterion = 1-exp(seq(-6, 1, length = 50))),
+                   tuneGrid = data.frame(mincriterion = 1-exp(seq(-1, -6, length = 100))),
                    trControl = ctrl)
 ggplot(ctree.fit, highlight = TRUE)
-
-resample <- resamples(list(ctree = ctree.fit,
-                         rpart = rpart.fit))
-summary(resample)
-
 ```
 
 # Random Forest
@@ -415,7 +414,7 @@ rf.grid <- expand.grid(mtry = 1:14,
                        splitrule = "variance",
                        min.node.size = 1:5)
 set.seed(6360)
-rf.fit <- train(outstate ~ . , 
+rf.fit <- train(recovery_time ~ . , 
                 trainData, 
                 method = "ranger",
                 tuneGrid = rf.grid,
@@ -429,23 +428,21 @@ rf.fit$bestTune
 
 # Boosting
 
-```{r boosting_gbm}
-set.seed(6360)
-gbm.grid <- expand.grid(n.trees = c(700, 1000, 2000, 2100, 2200, 2500, 2700, 3000, 4000),
+```{r boosting_ranger}
+
+gbm.grid <- expand.grid(n.trees = c(5000,10000,20000,30000,40000,50000),
                         interaction.depth = 1:3,
                         shrinkage = c(0.005,0.01),
                         n.minobsinnode = c(1))
-set.seed(6360)
-gbm.fit <- train(outstate ~ . , 
-                 trainData, 
+set.seed(1)
+gbm.fit <- train(Salary ~ . , 
+                 Hitters[trRows,], 
                  method = "gbm",
                  tuneGrid = gbm.grid,
                  trControl = ctrl,
                  verbose = FALSE)
 
 ggplot(gbm.fit, highlight = TRUE)
-
-gbm.fit$bestTune
 ```
 
 # Support Vector Machine
@@ -453,7 +450,7 @@ gbm.fit$bestTune
 ## support vector classifier (linear kernel)
 ```{r}
 set.seed(6360)
-fit.svml <- train(mpg_cat ~ . , 
+fit.svml <- train(recovery_time ~ . , 
                   data = trainData, 
                   method = "svmLinear",
                   tuneGrid = data.frame(C = exp(seq(-0.1, 5,len = 50))),
@@ -483,7 +480,146 @@ plot(fit.svmr, highlight = TRUE, par.settings = myPar)
 
 ## Black Box Model Interpretation
 
-# Binary Outcome
+# Create Data with Binary Outcome
+```{r data_creation}
+data_binary <-
+  data %>%
+  mutate(recovery_time = case_when(recovery_time > 30 ~ "long", TRUE ~ "short"),
+         recovery_time = as.factor(recovery_time))
+
+trRows_binary <- createDataPartition(data$recovery_time,
+                              p = .80,
+                              list = F)
+# training data
+trainData_binary <- data[trRows_binary, ]
+trainData_matrix_binary <- model.matrix(recovery_time~.,data)[trRows_binary, ]
+train_x_binary <- model.matrix(recovery_time~.,data)[trRows_binary,-1]
+train_y_binary <- data$recovery_time[trRows_binary]
+
+# test data
+testData_binary <- data[-trRows_binary, ]
+testData_matrix_binary <- model.matrix(recovery_time~.,data)[-trRows_binary,]
+test_x_binary <- model.matrix(recovery_time~.,data)[-trRows_binary,-1]
+test_y_binary <- data$recovery_time[-trRows_binary]
+
+ctrl_binary <- trainControl(method = "repeatedcv",
+                     summaryFunction = twoClassSummary,
+                     classProbs = TRUE)
+```
+
+# Visualization
+```{r}
+featurePlot(x = dat[, 1:14], 
+            y = dat$recovery_time,
+            scales = list(x = list(relation = "free"), 
+                          y = list(relation = "free")),
+            plot = "box", pch = "|", 
+            auto.key = list(columns = 2))
+```
+
+# Linear Models 
+
+## Logistic Regression
+```{r logistic_glm}
+
+model.glm <- train(train_x_binary, 
+                   train_y_binary,
+                   method = "glm",
+                   metric = "ROC",
+                   trControl = ctrl_binary)
+
+pred <- predict(model.glm, newdata = test_x, type = "prob")[,1]
+pred2 <- rep("short", length(test.pred))
+test.pred2[test.pred>0.5] = "long"
+mean(test.pred2 != test$Purchase)
+```
+
+## Penalized Logistic Regression
+```{r}
+set.seed(1)
+model.glmn <- train(x = dat[rowTrain,1:8],
+                    y = dat$diabetes[rowTrain],
+                    method = "glmnet",
+                    tuneGrid = glmnGrid,
+                    metric = "ROC",
+                    trControl = ctrl)
+
+model.glmn$bestTune
+
+myCol<- rainbow(25)
+myPar <- list(superpose.symbol = list(col = myCol),
+              superpose.line = list(col = myCol))
+
+plot(model.glmn, par.settings = myPar, xTrans = function(x) log(x))
+```
+
+## GAM for Binary Outcome
+```{r}
+set.seed(6360) 
+model.gam.binary <- train(train_x_binary,
+                   train_y_binary,
+                   method = "gam",
+                   metric = "ROC",
+                   trControl = ctrl_binary)
+```
+
+## MARS for Binary Outcome
+```{r}
+set.seed(6360) 
+model.mars.binary <- train(train_x_binary,
+                           train_y_binary,
+                           method = "earth",
+                           tuneGrid = expand.grid(degree = 1:4,
+                                                  nprune = 2:20),
+                           metric = "ROC",
+                           trControl = ctrl_binary)
+plot(model.mars.binary)O
+```
+
+## LDA
+```{r}
+set.seed(6360) 
+model.lda.binary <- train(train_x_binary,
+                          train_y_binary,
+                          method = "lda",
+                          metric = "ROC",
+                          trControl = ctrl_binary)
+```
+
+## QDA
+```{r}
+set.seed(6360) 
+model.qda.binary <- train(train_x_binary,
+                          train_y_binary,
+                          method = "qda",
+                          metric = "ROC",
+                          trControl = ctrl_binary)
+```
+
+## Naive Bayes
+```{r}
+nbGrid <- expand.grid(usekernel = c(FALSE,TRUE),
+                      fL = 1,
+                      adjust = seq(.2, 3, by = .2))
+set.seed(6360)
+model.nb.binary <- train(train_x_binary,
+                         train_y_binary,
+                         method = "nb",
+                         tuneGrid = nbGrid,
+                         metric = "ROC",
+                         trControl = ctrl_binary)
+plot(model.nb.binary)
+```
+
+# Classification Trees
+
+## Using rpart
+```{r}
+
+```
+
+## Using ctree
+
 ```{r}
 
 ```
