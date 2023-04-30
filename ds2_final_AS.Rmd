@@ -95,7 +95,7 @@ trainData %>%
 viz_point = function(name, title) {
   z = trainData %>%
     ggplot(aes(x = name, y = recovery_time, color = study)) +
-    geom_density() + 
+    geom_point() + 
     ggtitle(paste(title, "and recovery time by study")) + 
     xlab(title) +
     ylab("Recovery Time (days)")
@@ -262,7 +262,7 @@ set.seed(6360)
 # Using min rule
 fit.pls <- train(train_x, train_y,
                  method = "pls",
-                 tuneGrid = data.frame(ncomp = 1:19),
+                 tuneGrid = data.frame(ncomp = 3:15),
                  trControl = ctrl,
                  preProcess = c("center", "scale"))
 
@@ -334,7 +334,7 @@ set.seed(6360)
 fit.mars <- train(train_x, train_y,
                   method = "earth",
                   tuneGrid = expand.grid(degree = 1:3, 
-                                         nprune = 5:20),
+                                         nprune = 1:11),
                   trControl = ctrl)
 
 ggplot(fit.mars)
