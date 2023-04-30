@@ -412,7 +412,6 @@ ggplot(ctree.fit, highlight = TRUE)
 ```{r random_forest_ranger}
 set.seed(6360)
 rf.grid <- expand.grid(mtry = 1:14,
-                       # adjust mtry based on the number of predictors
                        splitrule = "variance",
                        min.node.size = 1:5)
 

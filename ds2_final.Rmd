@@ -429,12 +429,12 @@ rf.fit$bestTune
 # Boosting
 
 ```{r boosting_ranger}
-
-gbm.grid <- expand.grid(n.trees = c(5000,10000,20000,30000,40000,50000),
+set.seed(6360)
+gbm.grid <- expand.grid(n.trees = c(500, 700, 1000, 2000, 2100, 2200, 2500, 2700, 3000, 3250),
                         interaction.depth = 1:3,
                         shrinkage = c(0.005,0.01),
                         n.minobsinnode = c(1))
-set.seed(1)
+set.seed(6360)
 gbm.fit <- train(Salary ~ . , 
                  Hitters[trRows,], 
                  method = "gbm",
@@ -566,6 +566,7 @@ model.gam.binary <- train(train_x_binary,
 ## MARS for Binary Outcome
 ```{r}
 set.seed(6360) 
+
 model.mars.binary <- train(train_x_binary,
                            train_y_binary,
                            method = "earth",
@@ -573,7 +574,8 @@ model.mars.binary <- train(train_x_binary,
                                                   nprune = 2:20),
                            metric = "ROC",
                            trControl = ctrl_binary)
-plot(model.mars.binary)O
+
+plot(model.mars.binary)
 ```
 
 ## LDA
