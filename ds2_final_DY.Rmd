@@ -24,6 +24,12 @@ library(MASS)
 library(mlbench)
 library(pROC)
 library(klaR)
+library(rpart)
+library(randomForest)
+library(ranger)
+library(gbm)
+library(pdp)
+library(pROC)
 
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
 options(
@@ -183,8 +189,100 @@ model.nb.binary <- train(train_x_binary,
 plot(model.nb.binary)
 ```
 
-# Classification Tree
+# Classification Tree - rpart
 ```{r}
+set.seed(6360)
 
+# Using caret
+rpart.fit.binary <- train(recovery_time ~ . ,
+                          data_binary,
+                          subset = trRows_binary,
+                          method = "rpart",
+                          tuneGrid = data.frame(
+                            cp = exp(seq(-6,-3, len = 50))),
+                          trControl = ctrl_binary,
+                          metric = "ROC")
+
+ggplot(rpart.fit.binary, highlight = TRUE)
+
+rpart.plot::rpart.plot(rpart.fit.binary$finalModel)
+```
+
+# Classification Tree - ctree
+```{r}
+set.seed(6360)
+
+# Using caret
+ctree.fit.binary <- train(recovery_time ~ . , 
+                          data_binary,
+                          subset = trRows_binary,
+                          method = "ctree",
+                          tuneGrid = data.frame(
+                            mincriterion = 1-exp(seq(-2, -1, length = 50))),
+                          metric = "ROC",
+                          trControl = ctrl_binary)
+
+ggplot(ctree.fit.binary, highlight = TRUE)
+
+plot(ctree.fit.binary$finalModel)
+```
+
+# Bagging and random forests
+```{r}
+# Using caret
+rf.grid.binary <- expand.grid(mtry = 1:8,
+                              splitrule = "gini",
+                              min.node.size = seq(from = 2, to = 10, by = 2))
+
+set.seed(6360)
+
+rf.fit.binary <- train(recovery_time ~ . ,
+                       data_binary,
+                       subset = trRows_binary,
+                       method = "ranger",
+                       tuneGrid = rf.grid.binary,
+                       metric = "ROC",
+                       trControl = ctrl_binary)
+
+ggplot(rf.fit.binary, highlight = TRUE)
+```
+
+# Boosting
+```{r}
+gbmA.grid.binary <- expand.grid(n.trees = c(2000,3000,4000,5000),
+                                interaction.depth = 1:6,
+                                shrinkage = c(0.0005,0.001,0.002),
+                                n.minobsinnode = 1)
+
+set.seed(6360)
+
+gbmA.fit.binary <- train(recovery_time ~ . ,
+                         data_binary,
+                         subset = trRows_binary,
+                         tuneGrid = gbmA.grid.binary,
+                         trControl = ctrl_binary,
+                         method = "gbm",
+                         distribution = "adaboost",
+                         metric = "ROC",
+                         verbose = FALSE)
+
+ggplot(gbmA.fit.binary, highlight = TRUE)
+```
+
+# SVM
+```{r}
+set.seed(6360)
+
+svmGrid.binary <- expand.grid(C = seq(0.1, 10, by = 0.5),
+                       sigma = seq(0.1, 1, by = 0.1))
+
+svm.model.binary <- train(x = train_x_binary,
+                          y = train_y_binary,
+                          method = "svmRadial",
+                          tuneGrid = svmGrid.binary,
+                          metric = "ROC",
+                          trControl = ctrl_binary)
+
+plot(svm.model.binary)
 ```
 
