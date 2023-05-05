@@ -588,7 +588,7 @@ model.qda.binary <- train(train_x_binary,
 ```
 
 ## Naive Bayes
-```{r}
+```{r, warning=FALSE}
 nbGrid <- expand.grid(usekernel = c(FALSE,TRUE),
                       fL = 1,
                       adjust = seq(.2, 3, by = .2))
@@ -671,7 +671,7 @@ gbmA.fit.binary <- train(recovery_time ~ . ,
 ggplot(gbmA.fit.binary, highlight = TRUE)
 ```
 
-# SVM
+# SVM - radial
 ```{r}
 set.seed(6360)
 svmGrid.binary <- expand.grid(C = seq(0.1, 10, by = 0.5),
@@ -683,6 +683,24 @@ svm.model.binary <- train(x = train_x_binary,
                           metric = "ROC",
                           trControl = ctrl_binary)
 plot(svm.model.binary)
+```
+
+# SVM - linear
+
+```{r}
+set.seed(6360)
+
+svmGrid.binary <- expand.grid(C = seq(0.1, 10, by = 0.5),
+                       sigma = seq(0.1, 1, by = 0.1))
+
+svm.model.lin.binary <- train(x = train_x_binary,
+                          y = train_y_binary,
+                          method = "linear",
+                          tuneGrid = svmGrid.binary,
+                          metric = "ROC",
+                          trControl = ctrl_binary)
+
+plot(svm.model.lin.binary)
 ```
 
 # Comparing all binary models
