@@ -120,7 +120,33 @@ pred_binary <- predict(model.glm.binary, newdata = test_x_binary,
 pred2_binary <- rep("short", length(pred_binary))
 pred2_binary[pred_binary>0.5] = "long"
 
-mean(pred2_binary != testData_binary$recovery_time)
+#mean(pred2_binary != testData_binary$recovery_time)
+```
+
+# Penalized Logistic Regression
+```{r}
+glmnGrid <- expand.grid(.alpha = seq(0, 1, length = 21),
+                        .lambda = exp(seq(-8, -1, length = 50)))
+
+ctrl <- trainControl(method = "repeatedcv",
+                     summaryFunction = twoClassSummary,
+                     classProbs = TRUE)
+
+set.seed(6360)
+model.glmn.binary <- train(train_x_binary,
+                    train_y_binary,
+                    method = "glmnet",
+                    tuneGrid = glmnGrid,
+                    metric = "ROC",
+                    trControl = ctrl)
+
+model.glmn.binary$bestTune
+
+myCol<- rainbow(25)
+myPar <- list(superpose.symbol = list(col = myCol),
+              superpose.line = list(col = myCol))
+
+plot(model.glmn.binary, par.settings = myPar, xTrans = function(x) log(x))
 ```
 
 # GAM
@@ -284,5 +310,23 @@ svm.model.binary <- train(x = train_x_binary,
                           trControl = ctrl_binary)
 
 plot(svm.model.binary)
+```
+
+# Resample
+```{r}
+res <- resamples(list(GLM = model.glm.binary,
+                      GLMNET = model.glmn,
+                      GAM = model.gam,
+                      MARS = model.mars,
+                      LDA = model.lda.binary,
+                      QDA = model.qda.binary,
+                      NB = model.nb.binary,
+                      RPART = rpart.fit.binary,
+                      CTREE = ctree.fit.binary,
+                      RF = rf.fit.binary,
+                      GBM = gbmA.fit.binary,
+                      SVM = svm.model.binary))
+
+summary(res)
 ```
 
