@@ -342,6 +342,7 @@ bwplot(resample, metric = "RMSE")
 ```{r all_models, warning=FALSE}
 resample <- resamples(list(linear = fit.linear,
                          enet = fit.enet, 
+                         lasso = fit.lasso,
                          pls = fit.pls,
                          gam = fit.gam,
                          mars = fit.mars))
