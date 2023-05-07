@@ -397,7 +397,6 @@ rf.fit$bestTune
 ```
 
 # Boosting
-
 ```{r boosting_ranger}
 set.seed(6360)
 gbm.grid <- expand.grid(n.trees = c(500, 700, 1000, 2000, 2100, 2200, 2500, 2700, 3000, 3250),
@@ -419,6 +418,7 @@ ggplot(gbm.fit, highlight = TRUE)
 ```{r}
 resample <- resamples(list(linear = fit.linear,
                          enet = fit.enet, 
+                         lasso = fit.lasso,
                          pls = fit.pls,
                          gam = fit.gam,
                          mars = fit.mars,
