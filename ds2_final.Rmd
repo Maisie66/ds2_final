@@ -414,41 +414,6 @@ gbm.fit <- train(recovery_time ~ . ,
 ggplot(gbm.fit, highlight = TRUE)
 ```
 
-# Support Vector Machine
-
-## support vector classifier (linear kernel)
-```{r linear_kernel}
-set.seed(6360)
-fit.svml <- train(recovery_time ~ . , 
-                  data = trainData, 
-                  method = "svmLinear",
-                  tuneGrid = data.frame(C = exp(seq(-0.1, 5,len = 10))),
-                  trControl = ctrl)
-
-plot(fit.svml, highlight = TRUE, xTrans = log)
-```
-
-## Support vector machine with a radial kernel
-```{r radial_kernel}
-svmr.grid <- expand.grid(C = exp(seq(0,5,len = 10)),
-                         sigma = exp(seq(-10,-2,len = 5)))
-
-set.seed(6360)             
-fit.svmr <- train(recovery_time ~ . , 
-                  data = trainData, 
-                  method = "svmRadialSigma",
-                  tuneGrid = svmr.grid,
-                  trControl = ctrl)
-
-myCol <- rainbow(25)
-myPar <- list(superpose.symbol = list(col = myCol),
-              superpose.line = list(col = myCol))
-
-plot(fit.svmr, highlight = TRUE, par.settings = myPar)
-
-fit.svmr$bestTune
-```
-
 # Comparing all models
 ```{r}
 resample <- resamples(list(linear = fit.linear,
@@ -459,14 +424,11 @@ resample <- resamples(list(linear = fit.linear,
                          rpart = rpart.fit,
                          ctree = ctree.fit,
                          rf = rf.fit,
-                         boosting = gbm.fit,
-                         linear_kernel = fit.svml,
-                         radial_kernel = fit.svmr))
+                         boosting = gbm.fit))
 summary(resample)
 
 bwplot(resample, metric = "RMSE")
 ```
-
 
 # Create Data with Binary Outcome
 ```{r data_creation}
@@ -620,7 +582,6 @@ rpart.plot::rpart.plot(rpart.fit.binary$finalModel)
 ```
 
 ## Using ctree
-
 ```{r}
 set.seed(6360)
 ctree.fit.binary <- train(recovery_time ~ . , 
@@ -671,38 +632,6 @@ gbmA.fit.binary <- train(recovery_time ~ . ,
 ggplot(gbmA.fit.binary, highlight = TRUE)
 ```
 
-# SVM - radial
-```{r}
-set.seed(6360)
-svmGrid.binary <- expand.grid(C = seq(0.1, 10, by = 0.5),
-                       sigma = seq(0.1, 1, by = 0.1))
-svm.model.binary <- train(x = train_x_binary,
-                          y = train_y_binary,
-                          method = "svmRadial",
-                          tuneGrid = svmGrid.binary,
-                          metric = "ROC",
-                          trControl = ctrl_binary)
-plot(svm.model.binary)
-```
-
-# SVM - linear
-
-```{r}
-set.seed(6360)
-
-svmGrid.binary <- expand.grid(C = seq(0.1, 10, by = 0.5),
-                       sigma = seq(0.1, 1, by = 0.1))
-
-svm.model.lin.binary <- train(x = train_x_binary,
-                          y = train_y_binary,
-                          method = "linear",
-                          tuneGrid = svmGrid.binary,
-                          metric = "ROC",
-                          trControl = ctrl_binary)
-
-plot(svm.model.lin.binary)
-```
-
 # Comparing all binary models
 ```{r}
 resample <- resamples(list(logistic = model.glm.binary,
@@ -715,8 +644,7 @@ resample <- resamples(list(logistic = model.glm.binary,
                            rpart = rpart.fit.binary,
                            ctree = ctree.fit.binary,
                            rf = rf.fit.binary,
-                           boosting = gbmA.fit.binary,
-                           SVM = svm.model.binary))
+                           boosting = gbmA.fit.binary))
 summary(resample)
 
 bwplot(resample, metric = "ROC")
