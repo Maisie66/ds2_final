@@ -76,7 +76,7 @@ testData_matrix <- model.matrix(recovery_time~.,data)[-trRows,]
 test_x <- model.matrix(recovery_time~.,data)[-trRows,-1]
 test_y <- data$recovery_time[-trRows]
 
-ctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 5, selectionFunction = "best", savePredictions = "all")
+ctrl <- trainControl(method = "cv", number = 10, repeats = 5, selectionFunction = "best", savePredictions = "all")
 
 str(data)
 
@@ -490,7 +490,7 @@ testData_matrix_binary <- model.matrix(recovery_time~.,data_binary)[-trRows_bina
 test_x_binary <- model.matrix(recovery_time~.,data_binary)[-trRows_binary,-1]
 test_y_binary <- data_binary$recovery_time[-trRows_binary]
 
-ctrl_binary <- trainControl(method = "repeatedcv",
+ctrl_binary <- trainControl(method = "cv",
                      summaryFunction = twoClassSummary,
                      classProbs = TRUE)
 ```
@@ -525,8 +525,8 @@ mean(pred2_binary != testData_binary$recovery_time)
 
 ## Penalized Logistic Regression
 ```{r}
-glmnGrid <- expand.grid(.alpha = seq(0, 1, length = 20),
-                        .lambda = exp(seq(-8, -1, length = 10)))
+glmnGrid <- expand.grid(.alpha = seq(0, 5, length = 20),
+                        .lambda = exp(seq(-10, -5, length = 10)))
 set.seed(6360)
 model.glmn.penalized <- train(x = train_x_binary,
                     y = train_y_binary,
@@ -567,7 +567,7 @@ model.mars.binary <- train(train_x_binary,
 plot(model.mars.binary)
 ```
 
-## LDA
+## LDA 
 ```{r}
 set.seed(6360) 
 model.lda.binary <- train(train_x_binary,
