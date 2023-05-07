@@ -257,23 +257,6 @@ mean((pred.pls - test_y)^2)
 coef(fit.pls$finalModel, fit.pls$bestTune$ncomp)
 ```
 
-## Figures for cross-validation for pls and enet
-```{r plots}
-ggarrange(plot_enet, plot_pls, 
-          labels = c("A", "B"),
-          ncol = 2)
-```
-
-## Comparing linear models
-```{r linear_models, warning=FALSE}
-resample <- resamples(list(linear = fit.linear,
-                         enet = fit.enet, 
-                         pls = fit.pls))
-summary(resample)
-
-bwplot(resample, metric = "RMSE")
-```
-
 # Non-linear models
 
 ## Generalized Additive Model(GAM)
@@ -310,7 +293,8 @@ fit.mars <- train(train_x, train_y,
                                          nprune = 1:11),
                   trControl = ctrl)
 
-ggplot(fit.mars)
+plot_mars <- ggplot(fit.mars)
+plot_mars
 
 # Find selected tuning parameter
 fit.mars$bestTune
@@ -325,24 +309,19 @@ mean((pred.mars - test_y)^2)
 summary(fit.mars) %>% .$coefficients
 fit.mars$finalModel
 
-# Partial dependence plot of BMI on recovery time from final model 
-pdp::partial(fit.mars, pred.var = c("bmi"), grid.resolution = 10) %>% autoplot()
 ```
 
-## Comparing non-linear models
+## Figures for cross-validation for pls and enet
+```{r plots}
+ggarrange(plot_enet, plot_lasso, plot_pls, plot_mars,
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
+```
+
+## Comparing models for continuous recovery_time
 ```{r non_linear_models, warning=FALSE}
-resample <- resamples(list(gam = fit.gam,
-                         mars = fit.mars))
-summary(resample)
-
-bwplot(resample, metric = "RMSE")
-```
-
-# Comparing linear and non-linear models
-```{r all_models, warning=FALSE}
 resample <- resamples(list(linear = fit.linear,
                          enet = fit.enet, 
-                         lasso = fit.lasso,
                          pls = fit.pls,
                          gam = fit.gam,
                          mars = fit.mars))
@@ -379,7 +358,6 @@ ggplot(ctree.fit, highlight = TRUE)
 
 # Random Forest
 ```{r random_forest_gbm}
-set.seed(6360)
 rf.grid <- expand.grid(mtry = 1:14,
                        splitrule = "variance",
                        min.node.size = 1:5)
@@ -481,9 +459,7 @@ model.glm.binary <- train(train_x_binary,
 set.seed(6360)
 pred_binary <- predict(model.glm.binary, newdata = test_x_binary, 
                        type = "prob")[,1]
-pred2_binary <- rep("short", length(pred_binary))
-pred2_binary[pred_binary>0.5] = "long"
-mean(pred2_binary != testData_binary$recovery_time)
+
 ```
 
 ## Penalized Logistic Regression
@@ -528,6 +504,12 @@ model.mars.binary <- train(train_x_binary,
                            metric = "ROC",
                            trControl = ctrl_binary)
 plot(model.mars.binary)
+
+test.mars <- predict(model.mars.binary, newdata = testData_matrix_binary, type = "prob")[,2]
+test.mars_binary <- rep("long", length(test.mars))
+test.mars_binary[test.mars > 0.5] <- "short"
+mean(test.mars_binary != test_y_binary)
+
 ```
 
 ## LDA 
