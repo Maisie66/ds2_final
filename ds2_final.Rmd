@@ -1,6 +1,6 @@
 ---
 title: "ds2_final"
-author: "Maisie Sun"
+author: "Ayako, Sekiya, Maisie Sun, and Daisy Yan"
 date: "2023-04-29"
 output: html_document
 ---
@@ -23,6 +23,7 @@ library(corrplot)
 library(ggpubr)
 library(lime)
 library(vip)
+library(klaR)
 
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
 options(
