@@ -24,6 +24,8 @@ library(ggpubr)
 library(lime)
 library(vip)
 library(klaR)
+library(rpart.plot)
+
 
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
 options(
@@ -356,6 +358,8 @@ rpart.fit <- train(recovery_time ~ . ,
 rpart_plot <- ggplot(rpart.fit, highlight = TRUE)
 rpart_plot
 
+rpart.plot(rpart.fit$finalModel)
+
 ```
 
 ## Using ctree
@@ -369,13 +373,16 @@ ctree.fit <- train(recovery_time ~ . ,
 
 ctree_plot <- ggplot(ctree.fit, highlight = TRUE)
 ctree_plot
+
+plot(ctree.fit$finalModel)
+
 ```
 
 # Random Forest
 ```{r random_forest_gbm}
 rf.grid <- expand.grid(mtry = 1:14,
                        splitrule = "variance",
-                       min.node.size = 1:5)
+                       min.node.size = 2:8)
 set.seed(6360)
 rf.fit <- train(recovery_time ~ . , 
                 trainData, 
@@ -385,9 +392,6 @@ rf.fit <- train(recovery_time ~ . ,
 
 rf_plot <- ggplot(rf.fit, highlight = TRUE)
 rf_plot
-
-rf.fit$bestTune
-
 ```
 
 # Boosting
@@ -407,6 +411,8 @@ gbm.fit <- train(recovery_time ~ . ,
 
 gbm_plot <- ggplot(gbm.fit, highlight = TRUE)
 gbm_plot
+
+
 ```
 
 ## Figures for cross-validation for enet, lasso, pls, and mars.
