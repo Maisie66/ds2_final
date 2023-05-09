@@ -189,7 +189,7 @@ set.seed(6360)
 # Using min rule
 fit.enet <- train(train_x, train_y,
                    method = "glmnet",
-                   tuneGrid = expand.grid(alpha = seq(0, 1, length = 21), 
+                   tuneGrid = expand.grid(alpha = seq(0, 1, length = 10), 
                                          lambda = exp(seq(0.5, -1.5, length = 10))),
                   trControl = ctrl)
 
@@ -221,7 +221,7 @@ set.seed(6360)
 fit.lasso <- train(train_x, train_y,
                    method = "glmnet",
                    tuneGrid = expand.grid(alpha = 1, 
-                                          lambda = exp(seq(3, -7, length = 20))),
+                                          lambda = exp(seq(3, -7, length = 10))),
                    trControl = ctrl)
 
 plot_lasso <- plot(fit.lasso, xTrans = log)
@@ -321,6 +321,9 @@ mean((pred.mars - test_y)^2)
 summary(fit.mars) %>% .$coefficients
 fit.mars$finalModel
 
+# Partial dependence plot of BMI on recovery time from final model 
+continuous_pdp <- pdp::partial(fit.mars, pred.var = c("bmi"), grid.resolution = 10) %>% autoplot()
+continuous_pdp
 ```
 
 ## Figures for cross-validation for enet, lasso, pls, and mars.
@@ -352,7 +355,7 @@ set.seed(6360)
 rpart.fit <- train(recovery_time ~ . , 
                    trainData, 
                    method = "rpart",
-                   tuneGrid = data.frame(cp = exp(seq(-12,-2.5, length = 20))),
+                   tuneGrid = data.frame(cp = exp(seq(-12,-2.5, length = 10))),
                    trControl = ctrl)
 
 rpart_plot <- ggplot(rpart.fit, highlight = TRUE)
@@ -368,7 +371,7 @@ set.seed(6360)
 ctree.fit <- train(recovery_time ~ . , 
                    trainData, 
                    method = "ctree",
-                   tuneGrid = data.frame(mincriterion = 1-exp(seq(-1, -6, length = 20))),
+                   tuneGrid = data.frame(mincriterion = 1-exp(seq(-1, -6, length = 10))),
                    trControl = ctrl)
 
 ctree_plot <- ggplot(ctree.fit, highlight = TRUE)
@@ -504,7 +507,7 @@ pred_binary <- predict(model.glm.binary, newdata = test_x_binary,
 
 ## Penalized Logistic Regression
 ```{r, warning=FALSE}
-glmnGrid <- expand.grid(.alpha = seq(0, 5, length = 20),
+glmnGrid <- expand.grid(.alpha = seq(0, 5, length = 10),
                         .lambda = exp(seq(-10, -5, length = 10)))
 set.seed(6360)
 model.glmn.penalized <- train(x = train_x_binary,
@@ -541,7 +544,7 @@ model.mars.binary <- train(train_x_binary,
                            train_y_binary,
                            method = "earth",
                            tuneGrid = expand.grid(degree = 1:4,
-                                                  nprune = 2:20),
+                                                  nprune = 2:15),
                            metric = "ROC",
                            trControl = ctrl_binary)
 mars_b_plot <- plot(model.mars.binary)
@@ -557,6 +560,10 @@ mean(test.mars_binary != test_y_binary)
 # Coefficients for final model
 summary(model.mars.binary) %>% .$coefficients
 model.mars.binary$finalModel
+
+# Partial dependence plot of BMI on recovery time from final model 
+binary_pdp <- pdp::partial(model.mars.binary, pred.var = c("bmi"), grid.resolution = 10) %>% autoplot()
+binary_pdp
 ```
 
 ## LDA 
@@ -612,7 +619,7 @@ rpart.fit.binary <- train(recovery_time ~ . ,
                           subset = trRows_binary,
                           method = "rpart",
                           tuneGrid = data.frame(
-                            cp = exp(seq(-6,-3, len = 50))),
+                            cp = exp(seq(-10,-4, len = 10))),
                           trControl = ctrl_binary,
                           metric = "ROC")
 ggplot(rpart.fit.binary, highlight = TRUE)
@@ -627,19 +634,19 @@ ctree.fit.binary <- train(recovery_time ~ . ,
                           subset = trRows_binary,
                           method = "ctree",
                           tuneGrid = data.frame(
-                            mincriterion = 1-exp(seq(-2, -1, length = 10))),
+                            mincriterion = 1-exp(seq(-1, 0, length = 10))),
                           metric = "ROC",
                           trControl = ctrl_binary)
 ggplot(ctree.fit.binary, highlight = TRUE)
 plot(ctree.fit.binary$finalModel)
 ```
 
-# Bagging and random forests
+# Random forests
 ```{r}
 # Using caret
 rf.grid.binary <- expand.grid(mtry = 1:8,
                               splitrule = "gini",
-                              min.node.size = seq(from = 2, to = 10, by = 2))
+                              min.node.size = seq(from = -2, to = 8, by = 2))
 set.seed(6360)
 rf.fit.binary <- train(recovery_time ~ . ,
                        data_binary,
@@ -653,9 +660,9 @@ ggplot(rf.fit.binary, highlight = TRUE)
 
 # Boosting
 ```{r}
-gbmA.grid.binary <- expand.grid(n.trees = c(2000,3000,4000,5000),
+gbmA.grid.binary <- expand.grid(n.trees = c(1000,2000,3000,4000,5000),
                                 interaction.depth = 1:6,
-                                shrinkage = c(0.0005,0.001,0.002),
+                                shrinkage = c(0.001,0.002, 0.003),
                                 n.minobsinnode = 1)
 set.seed(6360)
 gbmA.fit.binary <- train(recovery_time ~ . ,
@@ -688,5 +695,13 @@ resample <- resamples(list(logistic = model.glm.binary,
 summary(resample)
 
 bwplot(resample, metric = "ROC")
+```
+
+## plots
+```{r}
+ggarrange(continuous_pdp, binary_pdp,
+          labels = c("A", "B"),
+          ncol = 2)
+
 ```
 
