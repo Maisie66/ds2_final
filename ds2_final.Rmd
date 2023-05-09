@@ -321,7 +321,7 @@ fit.mars$finalModel
 
 ```
 
-## Figures for cross-validation for pls and enet
+## Figures for cross-validation for enet, lasso, pls, and mars.
 ```{r plots}
 ggarrange(plot_enet, plot_lasso, plot_pls, plot_mars,
           labels = c("A", "B", "C", "D"),
@@ -353,7 +353,8 @@ rpart.fit <- train(recovery_time ~ . ,
                    tuneGrid = data.frame(cp = exp(seq(-12,-2.5, length = 20))),
                    trControl = ctrl)
 
-ggplot(rpart.fit, highlight = TRUE)
+rpart_plot <- ggplot(rpart.fit, highlight = TRUE)
+rpart_plot
 
 ```
 
@@ -365,7 +366,9 @@ ctree.fit <- train(recovery_time ~ . ,
                    method = "ctree",
                    tuneGrid = data.frame(mincriterion = 1-exp(seq(-1, -6, length = 20))),
                    trControl = ctrl)
-ggplot(ctree.fit, highlight = TRUE)
+
+ctree_plot <- ggplot(ctree.fit, highlight = TRUE)
+ctree_plot
 ```
 
 # Random Forest
@@ -380,7 +383,8 @@ rf.fit <- train(recovery_time ~ . ,
                 tuneGrid = rf.grid,
                 trControl = ctrl)
 
-ggplot(rf.fit, highlight = TRUE)
+rf_plot <- ggplot(rf.fit, highlight = TRUE)
+rf_plot
 
 rf.fit$bestTune
 
@@ -401,7 +405,15 @@ gbm.fit <- train(recovery_time ~ . ,
                  trControl = ctrl,
                  verbose = FALSE)
 
-ggplot(gbm.fit, highlight = TRUE)
+gbm_plot <- ggplot(gbm.fit, highlight = TRUE)
+gbm_plot
+```
+
+## Figures for cross-validation for enet, lasso, pls, and mars.
+```{r plots}
+ggarrange(rpart_plot, ctree_plot, rf_plot, gbm_plot,
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
 ```
 
 # Comparing all models
