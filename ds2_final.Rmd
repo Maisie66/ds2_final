@@ -415,7 +415,7 @@ gbm_plot
 
 ```
 
-## Figures for cross-validation for enet, lasso, pls, and mars.
+## Figures for cross-validation for regression trees, random forest, and boosting.
 ```{r plots}
 ggarrange(rpart_plot, ctree_plot, rf_plot, gbm_plot,
           labels = c("A", "B", "C", "D"),
@@ -520,7 +520,8 @@ myCol<- rainbow(25)
 myPar <- list(superpose.symbol = list(col = myCol),
               superpose.line = list(col = myCol))
 
-plot(model.glmn.penalized, par.settings = myPar, xTrans = function(x) log(x))
+penalized_plot <- plot(model.glmn.penalized, par.settings = myPar, xTrans = function(x) log(x))
+penalized_plot
 ```
 
 ## GAM for Binary Outcome
@@ -543,7 +544,10 @@ model.mars.binary <- train(train_x_binary,
                                                   nprune = 2:20),
                            metric = "ROC",
                            trControl = ctrl_binary)
-plot(model.mars.binary)
+mars_b_plot <- plot(model.mars.binary)
+mars_b_plot
+
+model.mars.binary$bestTune
 
 test.mars <- predict(model.mars.binary, newdata = testData_matrix_binary, type = "prob")[,2]
 test.mars_binary <- rep("long", length(test.mars))
@@ -587,7 +591,15 @@ model.nb.binary <- train(train_x_binary,
                          tuneGrid = nbGrid,
                          metric = "ROC",
                          trControl = ctrl_binary)
-plot(model.nb.binary)
+nb_plot <- plot(model.nb.binary)
+nb_plot
+```
+
+## Figures for cross-validation for enet, lasso, pls, and mars.
+```{r plots}
+ggarrange(penalized_plot, mars_b_plot, nb_plot,
+          labels = c("A", "B", "C"),
+          ncol = 2, nrow = 2)
 ```
 
 # Classification Trees
