@@ -697,11 +697,10 @@ summary(resample)
 bwplot(resample, metric = "ROC")
 ```
 
-## plots
+## partial dependence plots
 ```{r}
 ggarrange(continuous_pdp, binary_pdp,
           labels = c("A", "B"),
           ncol = 2)
-
 ```
 
