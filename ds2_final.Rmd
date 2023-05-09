@@ -464,7 +464,7 @@ pred_binary <- predict(model.glm.binary, newdata = test_x_binary,
 ```
 
 ## Penalized Logistic Regression
-```{r}
+```{r, warning=FALSE}
 glmnGrid <- expand.grid(.alpha = seq(0, 5, length = 20),
                         .lambda = exp(seq(-10, -5, length = 10)))
 set.seed(6360)
