@@ -427,6 +427,7 @@ bwplot(resample, metric = "RMSE")
 
 # Create Data with Binary Outcome
 Instead of having recovery time as continuous, we will now binarize the outcome to short and long recover time using 30 as the cut-off point.
+Coefficients will only be outputted for the best model to allow for greater running speed.
 
 ```{r data_creation}
 data_binary <-
@@ -530,6 +531,9 @@ test.mars_binary <- rep("long", length(test.mars))
 test.mars_binary[test.mars > 0.5] <- "short"
 mean(test.mars_binary != test_y_binary)
 
+# Coefficients for final model
+summary(model.mars.binary) %>% .$coefficients
+model.mars.binary$finalModel
 ```
 
 ## LDA 
