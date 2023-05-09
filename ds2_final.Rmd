@@ -435,6 +435,7 @@ data_binary <-
   mutate(recovery_time = case_when(recovery_time > 30 ~ "long", TRUE ~ "short"),
          recovery_time = as.factor(recovery_time))
 
+set.seed(6360)
 trRows_binary <- createDataPartition(data_binary$recovery_time,
                               p = .80,
                               list = F)
