@@ -25,7 +25,12 @@ library(lime)
 library(vip)
 library(klaR)
 library(rpart.plot)
+library(parallel)
+library(doParallel)
 
+no_cores <- detectCores()
+cl <- makePSOCKcluster(no_cores)
+registerDoParallel(cl)
 
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
 options(
@@ -189,8 +194,8 @@ set.seed(6360)
 # Using min rule
 fit.enet <- train(train_x, train_y,
                    method = "glmnet",
-                   tuneGrid = expand.grid(alpha = seq(0, 1, length = 10), 
-                                         lambda = exp(seq(0.5, -1.5, length = 10))),
+                   tuneGrid = expand.grid(alpha = seq(0, 1, length = 50), 
+                                         lambda = exp(seq(0.5, -1.5, length = 50))),
                   trControl = ctrl)
 
 colors <- rainbow(25)
@@ -221,7 +226,7 @@ set.seed(6360)
 fit.lasso <- train(train_x, train_y,
                    method = "glmnet",
                    tuneGrid = expand.grid(alpha = 1, 
-                                          lambda = exp(seq(3, -7, length = 10))),
+                                          lambda = exp(seq(3, -7, length = 50))),
                    trControl = ctrl)
 
 plot_lasso <- plot(fit.lasso, xTrans = log)
@@ -355,7 +360,7 @@ set.seed(6360)
 rpart.fit <- train(recovery_time ~ . , 
                    trainData, 
                    method = "rpart",
-                   tuneGrid = data.frame(cp = exp(seq(-12,-2.5, length = 10))),
+                   tuneGrid = data.frame(cp = exp(seq(-12,-2.5, length = 50))),
                    trControl = ctrl)
 
 rpart_plot <- ggplot(rpart.fit, highlight = TRUE)
@@ -371,7 +376,7 @@ set.seed(6360)
 ctree.fit <- train(recovery_time ~ . , 
                    trainData, 
                    method = "ctree",
-                   tuneGrid = data.frame(mincriterion = 1-exp(seq(-1, -6, length = 10))),
+                   tuneGrid = data.frame(mincriterion = 1-exp(seq(-1, -6, length = 50))),
                    trControl = ctrl)
 
 ctree_plot <- ggplot(ctree.fit, highlight = TRUE)
@@ -385,7 +390,7 @@ plot(ctree.fit$finalModel)
 ```{r random_forest_gbm}
 rf.grid <- expand.grid(mtry = 1:14,
                        splitrule = "variance",
-                       min.node.size = 2:8)
+                       min.node.size = 1:8)
 set.seed(6360)
 rf.fit <- train(recovery_time ~ . , 
                 trainData, 
@@ -400,9 +405,9 @@ rf_plot
 # Boosting
 ```{r boosting_ranger}
 set.seed(6360)
-gbm.grid <- expand.grid(n.trees = c(500, 700, 1000, 2000, 2100, 2200, 2500, 2700, 3000, 3250),
+gbm.grid <- expand.grid(n.trees = c(0, 250, 500, 700, 1000, 1250, 1500, 1600),
                         interaction.depth = 1:3,
-                        shrinkage = c(0.005,0.01),
+                        shrinkage = c(0.005,0.01, 0.07),
                         n.minobsinnode = c(1))
 set.seed(6360)
 gbm.fit <- train(recovery_time ~ . , 
@@ -507,8 +512,8 @@ pred_binary <- predict(model.glm.binary, newdata = test_x_binary,
 
 ## Penalized Logistic Regression
 ```{r, warning=FALSE}
-glmnGrid <- expand.grid(.alpha = seq(0, 5, length = 10),
-                        .lambda = exp(seq(-10, -5, length = 10)))
+glmnGrid <- expand.grid(.alpha = seq(0, 5, length = 50),
+                        .lambda = exp(seq(-10, -5, length = 50)))
 set.seed(6360)
 model.glmn.penalized <- train(x = train_x_binary,
                     y = train_y_binary,
@@ -535,6 +540,9 @@ model.gam.binary <- train(train_x_binary,
                    method = "gam",
                    metric = "ROC",
                    trControl = ctrl_binary)
+
+model.gam.binary$bestTune
+model.gam.binary$finalModel
 ```
 
 ## MARS for Binary Outcome
@@ -619,10 +627,12 @@ rpart.fit.binary <- train(recovery_time ~ . ,
                           subset = trRows_binary,
                           method = "rpart",
                           tuneGrid = data.frame(
-                            cp = exp(seq(-10,-4, len = 10))),
+                            cp = exp(seq(-10,-4, len = 50))),
                           trControl = ctrl_binary,
                           metric = "ROC")
-ggplot(rpart.fit.binary, highlight = TRUE)
+binary_rpart <- ggplot(rpart.fit.binary, highlight = TRUE)
+binary_rpart
+
 rpart.plot::rpart.plot(rpart.fit.binary$finalModel)
 ```
 
@@ -634,17 +644,19 @@ ctree.fit.binary <- train(recovery_time ~ . ,
                           subset = trRows_binary,
                           method = "ctree",
                           tuneGrid = data.frame(
-                            mincriterion = 1-exp(seq(-1, 0, length = 10))),
+                            mincriterion = 1-exp(seq(-1, 0, length = 50))),
                           metric = "ROC",
                           trControl = ctrl_binary)
-ggplot(ctree.fit.binary, highlight = TRUE)
+binary_ctree <- ggplot(ctree.fit.binary, highlight = TRUE)
+binary_ctree
+
 plot(ctree.fit.binary$finalModel)
 ```
 
 # Random forests
 ```{r}
 # Using caret
-rf.grid.binary <- expand.grid(mtry = 1:8,
+rf.grid.binary <- expand.grid(mtry = 1:14,
                               splitrule = "gini",
                               min.node.size = seq(from = -2, to = 8, by = 2))
 set.seed(6360)
@@ -655,14 +667,18 @@ rf.fit.binary <- train(recovery_time ~ . ,
                        tuneGrid = rf.grid.binary,
                        metric = "ROC",
                        trControl = ctrl_binary)
-ggplot(rf.fit.binary, highlight = TRUE)
+
+rf.fit.binary$bestTune
+
+binary_rf <- ggplot(rf.fit.binary, highlight = TRUE)
+binary_rf
 ```
 
 # Boosting
 ```{r}
-gbmA.grid.binary <- expand.grid(n.trees = c(1000,2000,3000,4000,5000),
-                                interaction.depth = 1:6,
-                                shrinkage = c(0.001,0.002, 0.003),
+gbmA.grid.binary <- expand.grid(n.trees = c(2000,3000,6500,5000),
+                                interaction.depth = 1:3,
+                                shrinkage = c(0.001,0.0017,0.0021),
                                 n.minobsinnode = 1)
 set.seed(6360)
 gbmA.fit.binary <- train(recovery_time ~ . ,
@@ -674,7 +690,16 @@ gbmA.fit.binary <- train(recovery_time ~ . ,
                          distribution = "adaboost",
                          metric = "ROC",
                          verbose = FALSE)
-ggplot(gbmA.fit.binary, highlight = TRUE)
+
+binary_boosting <- ggplot(gbmA.fit.binary, highlight = TRUE)
+binary_boosting
+```
+
+## Figures for cross-validation for rpart, ctree, rf, and boosting
+```{r plots}
+ggarrange(binary_rpart, binary_ctree, binary_rf, binary_boosting,
+          labels = c("A", "B", "C", "D"),
+          ncol = 2, nrow = 2)
 ```
 
 # Comparing all binary models
