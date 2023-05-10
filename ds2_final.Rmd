@@ -647,6 +647,7 @@ ctree.fit.binary <- train(recovery_time ~ . ,
                             mincriterion = 1-exp(seq(-1, 0, length = 50))),
                           metric = "ROC",
                           trControl = ctrl_binary)
+
 binary_ctree <- ggplot(ctree.fit.binary, highlight = TRUE)
 binary_ctree
 
