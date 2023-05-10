@@ -2,7 +2,7 @@
 title: "ds2_final"
 author: "Ayako, Sekiya, Maisie Sun, and Daisy Yan"
 date: "2023-04-29"
-output: html_document
+output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
@@ -332,7 +332,7 @@ continuous_pdp
 ```
 
 ## Figures for cross-validation for enet, lasso, pls, and mars.
-```{r plots}
+```{r plots1}
 ggarrange(plot_enet, plot_lasso, plot_pls, plot_mars,
           labels = c("A", "B", "C", "D"),
           ncol = 2, nrow = 2)
@@ -424,7 +424,7 @@ gbm_plot
 ```
 
 ## Figures for cross-validation for regression trees, random forest, and boosting.
-```{r plots}
+```{r plots2}
 ggarrange(rpart_plot, ctree_plot, rf_plot, gbm_plot,
           labels = c("A", "B", "C", "D"),
           ncol = 2, nrow = 2)
@@ -611,7 +611,7 @@ nb_plot
 ```
 
 ## Figures for cross-validation for enet, lasso, pls, and mars.
-```{r plots}
+```{r plots3}
 ggarrange(penalized_plot, mars_b_plot, nb_plot,
           labels = c("A", "B", "C"),
           ncol = 2, nrow = 2)
@@ -696,7 +696,7 @@ binary_boosting
 ```
 
 ## Figures for cross-validation for rpart, ctree, rf, and boosting
-```{r plots}
+```{r plots4}
 ggarrange(binary_rpart, binary_ctree, binary_rf, binary_boosting,
           labels = c("A", "B", "C", "D"),
           ncol = 2, nrow = 2)
